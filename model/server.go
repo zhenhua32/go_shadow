@@ -115,6 +115,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		dstPort = buf[1+net.IPv6len : 1+net.IPv6len+2]
 		headerLen = 1 + net.IPv6len + 2
 	default:
+		logrus.Info("没有解析成功")
 		return
 	}
 	logrus.Infof("排除头部后剩余的数据: %v", source[headerLen:])
