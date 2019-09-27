@@ -48,3 +48,18 @@ func TestNewAESCrypto_DecodeData(t *testing.T) {
 	}
 	t.Log(string(plaintext))
 }
+
+func TestTT(t *testing.T) {
+	password = "hellotheworld"
+	c, _ := NewAESCrypto(password, 32)
+	ciphertext, _ := hex.DecodeString("786e72f5b670fdc33616792cfcf59d091781b0a6e91b6dd360012824fd75f6d57a35fc9c3d1c53d392c2748b90a837bb8763288e43aada4329c560905e2fa11b")
+	plaintext, err := c.DecodeData(ciphertext)
+	if err != nil {
+		t.Errorf("AESCrypto 解密时发生错误: %v", err)
+	}
+	source := "hello world"
+	if string(plaintext) != source {
+		t.Errorf("解密后的结果不正确, 解密结果为 %s, 应该是 %s", string(plaintext), source)
+	}
+	t.Errorf("%v", plaintext)
+}

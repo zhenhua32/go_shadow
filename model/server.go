@@ -59,7 +59,7 @@ func (s *TCPServer) Listen() error {
 func (s *TCPServer) handle(conn *net.TCPConn) {
 	defer conn.Close()
 
-	source := make([]byte, 64)
+	source := make([]byte, 256)
 	n, err := conn.Read(source)
 	if err != nil {
 		return
@@ -72,6 +72,8 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	if err != nil {
 		return
 	}
+	logrus.Infof("读到的数据, 解密后: %v", buf)
+	logrus.Infof("读到的数据, 解密后 hex 表示: %v", hex.EncodeToString(buf))
 	/*
 			shadowsocks UDP 请求 (加密前)
 		+------+----------+----------+----------+

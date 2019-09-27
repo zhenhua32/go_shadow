@@ -25,7 +25,7 @@ func (u *User) InitServer() *TCPServer {
 
 // StartServer 启动服务器
 func (u *User) StartServer() {
-	logrus.Infof("用户 %v 启动服务器在 %v 端口", u.ID, u.Port)
+	logrus.Infof("用户 %v 启动服务器在 %v 端口, 使用 %v 加密", u.ID, u.Port, u.CipherType)
 	server := NewTCPServer(u.Port, u.CipherType, u.Password)
 	server.Listen()
 }
