@@ -97,6 +97,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	var dstIP []byte
 	var dstPort []byte
 	var headerLen int
+	logrus.Infof("第一个字节是 %v", buf[0])
 	switch buf[0] {
 	case 0x01: // IPV4
 		dstIP = buf[1 : 1+net.IPv4len]
