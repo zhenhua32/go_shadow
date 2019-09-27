@@ -15,6 +15,7 @@ type TCPServer struct {
 	crypto  cipher.Crypto // 加密方式
 	laddr   *net.TCPAddr  // 本地地址, 类似 :8080
 	bufSize int           // 缓存大小, 字节
+	lenIv   int           // iv 的长度
 }
 
 // NewTCPServer 新建一个 TCP 服务端
@@ -33,6 +34,7 @@ func NewTCPServer(port int, method string, password string) *TCPServer {
 		crypto:  crypto,
 		laddr:   laddr,
 		bufSize: 1024,
+		lenIv:   16,
 	}
 }
 
@@ -57,6 +59,12 @@ func (s *TCPServer) Listen() error {
 // handle 处理每一个连接
 func (s *TCPServer) handle(conn *net.TCPConn) {
 	defer conn.Close()
+
+	iv := make([]byte, s.lenIv)
+	if _, err := io.ReadFull(conn, iv); err != nil {
+		return
+	}
+	s.crypto.SetRemoteiv(iv)
 
 	// 1(addrType) + 1(lenByte) + 255(max length address) + 2(port) + 10(hmac-sha1)
 	source := make([]byte, 269)

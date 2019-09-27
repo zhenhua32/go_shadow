@@ -4,16 +4,16 @@ import (
 	"crypto/aes"
 	gocipher "crypto/cipher"
 	"crypto/rand"
+	"errors"
 	"io"
-
-	"golang.org/x/crypto/scrypt"
 )
 
 // AESCrypto 是 AES加密实现, 暂时是 CFB
 type AESCrypto struct {
-	key   []byte         // key 是从密码中生成 derived key
-	block gocipher.Block // block 是 cipher.Block, 块加密
-	iv    []byte         // 随机向量, 来自于客户端发送
+	key      []byte         // key 是从密码中生成 derived key
+	block    gocipher.Block // block 是 cipher.Block, 块加密
+	Localiv  []byte         // Localiv 本地用于加密的 iv
+	Remoteiv []byte         // Remoteiv, 来自客户端, 用于解密
 }
 
 // NewAESCrypto 创建一个新的 AESCrypto
@@ -34,33 +34,38 @@ func NewAESCrypto(password string, keylen int) (*AESCrypto, error) {
 	}, nil
 }
 
-// GenKey 从密码中生成 derived key
-func GenKey(password string, keylen int) ([]byte, error) {
-	dk, err := scrypt.Key([]byte(password), []byte("fake"), 32768, 8, 1, keylen)
-	return dk, err
-}
-
-// EncodeData 使用 cfb 加密
+// EncodeData 使用 cfb 加密, 返回的数据不包括 iv
 func (c *AESCrypto) EncodeData(plaintext []byte) ([]byte, error) {
-	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
-	iv := ciphertext[:aes.BlockSize]
-	// 随机填充 iv
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, err
+	if c.Localiv == nil {
+		// 随机填充 iv
+		iv := make([]byte, aes.BlockSize)
+		if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+			return nil, err
+		}
+		c.Localiv = iv
 	}
-	stream := gocipher.NewCFBEncrypter(c.block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+	ciphertext := make([]byte, len(plaintext))
+
+	stream := gocipher.NewCFBEncrypter(c.block, c.Localiv)
+	stream.XORKeyStream(ciphertext, plaintext)
 	return ciphertext, nil
 }
 
-// DecodeData 使用 cfb 解密, data 不包括 iv
+// DecodeData 使用 cfb 解密, ciphertext 不包括 iv
 func (c *AESCrypto) DecodeData(ciphertext []byte) ([]byte, error) {
-	// iv := data[:aes.BlockSize]
+	if c.Remoteiv == nil {
+		return nil, errors.New("没有设置 Remoteiv")
+	}
 	plaintext := make([]byte, len(ciphertext))
 
-	stream := gocipher.NewCFBDecrypter(c.block, c.iv)
+	stream := gocipher.NewCFBDecrypter(c.block, c.Remoteiv)
 	stream.XORKeyStream(plaintext, ciphertext)
 	return plaintext, nil
+}
+
+// SetRemoteiv 设置 Remoteiv
+func (c *AESCrypto) SetRemoteiv(iv []byte) {
+	c.Remoteiv = iv
 }
 
 // AESSupportMethods 返回支持的加密方法

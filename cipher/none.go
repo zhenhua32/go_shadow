@@ -18,3 +18,7 @@ func (c *NoneCrypto) EncodeData(data []byte) ([]byte, error) {
 func (c *NoneCrypto) DecodeData(data []byte) ([]byte, error) {
 	return data, nil
 }
+
+// SetRemoteiv 设置 iv
+func (c *NoneCrypto) SetRemoteiv(iv []byte) {
+}
