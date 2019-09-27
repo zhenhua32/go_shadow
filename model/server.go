@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"io"
 	"net"
 	"strconv"
@@ -58,11 +59,14 @@ func (s *TCPServer) Listen() error {
 func (s *TCPServer) handle(conn *net.TCPConn) {
 	defer conn.Close()
 
-	source := make([]byte, 256)
+	source := make([]byte, 64)
 	n, err := conn.Read(source)
 	if err != nil {
 		return
 	}
+	logrus.Infof("读到的字节数: %v", n)
+	logrus.Infof("读到的数据: %v", source)
+	logrus.Infof("读到的数据 hex 表示: %v", hex.EncodeToString(source))
 
 	buf, err := s.crypto.DecodeData(source)
 	if err != nil {
@@ -92,21 +96,28 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	// 判断地址类型
 	var dstIP []byte
 	var dstPort []byte
+	var headerLen int
 	switch buf[0] {
 	case 0x01: // IPV4
 		dstIP = buf[1 : 1+net.IPv4len]
+		dstPort = buf[1+net.IPv4len : 1+net.IPv4len+2]
+		headerLen = 1 + net.IPv4len + 2
 	case 0x03: // DOMAINNAME
-		ipaddr, err := net.ResolveIPAddr("ip", string(buf[4:n-2]))
+		addrlen := int(buf[1])
+		ipaddr, err := net.ResolveIPAddr("ip", string(buf[2:2+addrlen]))
 		if err != nil {
 			return
 		}
 		dstIP = ipaddr.IP
+		headerLen = 2 + addrlen + 2
 	case 0x04: // IPV6
 		dstIP = buf[1 : 1+net.IPv6len]
+		dstPort = buf[1+net.IPv6len : 1+net.IPv6len+2]
+		headerLen = 1 + net.IPv6len + 2
 	default:
 		return
 	}
-	dstPort = buf[n-2:]
+	logrus.Infof("排除头部后剩余的数据: %v", source[headerLen:])
 	dstAddr := &net.TCPAddr{
 		IP:   dstIP,
 		Port: int(binary.BigEndian.Uint16(dstPort)),
