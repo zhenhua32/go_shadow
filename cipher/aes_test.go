@@ -38,7 +38,8 @@ func TestAESCrypto_EncodeData(t *testing.T) {
 func TestNewAESCrypto_DecodeData(t *testing.T) {
 	c, _ := NewAESCrypto(password, 16)
 	ciphertext, _ := hex.DecodeString("12516deaf8a06cc4ff9072fb84938e87b557c29d8017274406f7f5")
-	plaintext, err := c.DecodeData(ciphertext)
+	c.iv = ciphertext[:16]
+	plaintext, err := c.DecodeData(ciphertext[16:])
 	if err != nil {
 		t.Errorf("AESCrypto 解密时发生错误: %v", err)
 	}

@@ -1,7 +1,6 @@
 package model
 
 import (
-	"bytes"
 	"encoding/binary"
 	"io"
 	"net"
@@ -59,18 +58,14 @@ func (s *TCPServer) Listen() error {
 func (s *TCPServer) handle(conn *net.TCPConn) {
 	defer conn.Close()
 
-	source := make([]byte, 128)
-	source2 := make([]byte, 128)
-	n, err := conn.Read(source)
-	if err != nil {
+	// 1(addrType) + 1(lenByte) + 255(max length address) + 2(port) + 10(hmac-sha1)
+	source := make([]byte, 269)
+	if _, err := io.ReadFull(conn, source[:1]); err != nil {
 		return
 	}
-	binary.Read(bytes.NewReader(source), binary.LittleEndian, &source2)
-	logrus.Infof("读到的字节数: %v", n)
 	logrus.Infof("读到的数据 source: %v", source)
-	logrus.Infof("读到的数据 source2: %v", source2)
 
-	buf, err := s.crypto.DecodeData(source2)
+	buf, err := s.crypto.DecodeData(source)
 	if err != nil {
 		return
 	}
@@ -123,7 +118,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		logrus.Info("没有解析成功")
 		return
 	}
-	logrus.Infof("排除头部后剩余的数据: %v", source[headerLen:])
+	logrus.Infof("排除头部后剩余的数据: %v", buf[headerLen:])
 	dstAddr := &net.TCPAddr{
 		IP:   dstIP,
 		Port: int(binary.BigEndian.Uint16(dstPort)),
