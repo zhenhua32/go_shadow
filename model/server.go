@@ -52,6 +52,7 @@ func (s *TCPServer) Listen() error {
 			logrus.Errorln("处理连接时遇到错误: ", err)
 			continue
 		}
+		logrus.Info("接收到一个连接")
 		go s.handle(conn)
 	}
 }
