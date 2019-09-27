@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"io"
 	"net"
 	"strconv"
@@ -66,14 +65,13 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	}
 	logrus.Infof("读到的字节数: %v", n)
 	logrus.Infof("读到的数据: %v", source)
-	logrus.Infof("读到的数据 hex 表示: %v", hex.EncodeToString(source))
 
 	buf, err := s.crypto.DecodeData(source)
 	if err != nil {
 		return
 	}
 	logrus.Infof("读到的数据, 解密后: %v", buf)
-	logrus.Infof("读到的数据, 解密后 hex 表示: %v", hex.EncodeToString(buf))
+	logrus.Infof("读到的数据, 解密后 字符串形式: %v", string(buf))
 	/*
 			shadowsocks UDP 请求 (加密前)
 		+------+----------+----------+----------+
