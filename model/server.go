@@ -67,8 +67,8 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	}
 	binary.Read(bytes.NewReader(source), binary.BigEndian, &source2)
 	logrus.Infof("读到的字节数: %v", n)
-	logrus.Infof("读到的数据: %v", source)
-	logrus.Infof("读到的数据 字符串形式: %v", string(source))
+	logrus.Infof("读到的数据 source: %v", source)
+	logrus.Infof("读到的数据 source2: %v", source2)
 
 	buf, err := s.crypto.DecodeData(source2)
 	if err != nil {
