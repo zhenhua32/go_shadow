@@ -7,3 +7,14 @@ type Crypto interface {
 	// 解密数据
 	DecodeData(data []byte) ([]byte, error)
 }
+
+// NewCrypto 根据 method 返回不同的加密方式
+func NewCrypto(method string, password string) (Crypto, error) {
+	isAES, keylen := IsAESSupported(method)
+	switch {
+	case isAES:
+		return NewAESCrypto(password, keylen)
+	default:
+		return NewNoneCrypto(), nil
+	}
+}

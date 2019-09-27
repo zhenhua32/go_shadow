@@ -9,6 +9,7 @@ import (
 	"tzh.com/shadow/cipher"
 )
 
+// TCPServer 创建一个 TCP 服务器
 type TCPServer struct {
 	crypto  cipher.Crypto // 加密方式
 	laddr   *net.TCPAddr  // 本地地址, :8080
@@ -16,13 +17,19 @@ type TCPServer struct {
 }
 
 // NewTCPServer 新建一个 TCP 服务端
-func NewTCPServer(port int) *TCPServer {
+func NewTCPServer(port int, method string, password string) *TCPServer {
 	laddr, err := net.ResolveTCPAddr("tcp", ":"+string(port))
 	if err != nil {
-		logrus.Errorln("创建 TCP 服务端时发生错误: ", err)
+		logrus.Errorln("创建 TCP 服务端时发生地址解析错误: ", err)
+		return nil
+	}
+	crypto, err := cipher.NewCrypto(method, password)
+	if err != nil {
+		logrus.Errorln("创建 TCP 服务端时发生加密方式错误: ", err)
 		return nil
 	}
 	return &TCPServer{
+		crypto:  crypto,
 		laddr:   laddr,
 		bufSize: 1024,
 	}

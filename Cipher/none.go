@@ -4,14 +4,17 @@ package cipher
 type NoneCrypto struct {
 }
 
+// NewNoneCrypto 不加密数据
 func NewNoneCrypto() *NoneCrypto {
 	return &NoneCrypto{}
 }
 
+// EncodeData 加密数据, 实际上原样返回
 func (c *NoneCrypto) EncodeData(data []byte) ([]byte, error) {
 	return data, nil
 }
 
+// DecodeData 解密数据, 实际上原样返回
 func (c *NoneCrypto) DecodeData(data []byte) ([]byte, error) {
 	return data, nil
 }

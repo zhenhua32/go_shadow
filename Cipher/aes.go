@@ -66,3 +66,22 @@ func (c *AESCrypto) DecodeData(data []byte) ([]byte, error) {
 	stream.XORKeyStream(plaintext, ciphertext) // in-place work
 	return plaintext, nil
 }
+
+// AESSupportMethods 返回支持的加密方法
+func AESSupportMethods() []string {
+	return []string{"aes-128-cfb", "aes-192-cfb", "aes-256-cfb"}
+}
+
+// IsAESSupported 判断某种加密方法是否支持, 对支持的方法返回 keylen
+func IsAESSupported(method string) (bool, int) {
+	switch method {
+	case "aes-128-cfb":
+		return true, 16
+	case "aes-192-cfb":
+		return true, 24
+	case "aes-256-cfb":
+		return true, 32
+	default:
+		return false, 0
+	}
+}
