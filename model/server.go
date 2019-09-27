@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 	"net"
@@ -59,15 +60,17 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	defer conn.Close()
 
 	source := make([]byte, 128)
+	source2 := make([]byte, 128)
 	n, err := conn.Read(source)
 	if err != nil {
 		return
 	}
+	binary.Read(bytes.NewReader(source), binary.BigEndian, &source2)
 	logrus.Infof("读到的字节数: %v", n)
 	logrus.Infof("读到的数据: %v", source)
 	logrus.Infof("读到的数据 字符串形式: %v", string(source))
 
-	buf, err := s.crypto.DecodeData(source)
+	buf, err := s.crypto.DecodeData(source2)
 	if err != nil {
 		return
 	}
