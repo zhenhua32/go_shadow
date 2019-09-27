@@ -17,6 +17,7 @@ func TestLoadUsersFromJSON(t *testing.T) {
 		CipherType: "aes-256-cfb",
 		Enable:     true,
 		SpeedLimit: 0,
+		Transfer:   0,
 	}
 	u := Users{
 		Users: []User{user},

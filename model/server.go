@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 	"tzh.com/shadow/cipher"
@@ -12,13 +13,13 @@ import (
 // TCPServer 创建一个 TCP 服务器
 type TCPServer struct {
 	crypto  cipher.Crypto // 加密方式
-	laddr   *net.TCPAddr  // 本地地址, :8080
+	laddr   *net.TCPAddr  // 本地地址, 类似 :8080
 	bufSize int           // 缓存大小, 字节
 }
 
 // NewTCPServer 新建一个 TCP 服务端
 func NewTCPServer(port int, method string, password string) *TCPServer {
-	laddr, err := net.ResolveTCPAddr("tcp", ":"+string(port))
+	laddr, err := net.ResolveTCPAddr("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
 		logrus.Errorln("创建 TCP 服务端时发生地址解析错误: ", err)
 		return nil

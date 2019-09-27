@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "port": 2345,
+      "password": "hellotheworld",
+      "cipher_type": "aes-256-cfb",
+      "enable": true,
+      "speed_limit": 0,
+      "transfer": 104857600
+    }
+  ]
+}
