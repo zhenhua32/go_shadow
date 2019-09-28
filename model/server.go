@@ -61,10 +61,12 @@ func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
 	if _, err := io.ReadFull(conn, buf); err != nil {
 		return err
 	}
+	logrus.Infof("未解密前: %v", buf)
 	buf, err := s.crypto.DecodeData(buf)
 	if err != nil {
 		return err
 	}
+	logrus.Infof("解密后: %v", buf)
 	return nil
 }
 
@@ -78,13 +80,13 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		return
 	}
 	s.crypto.SetRemoteiv(iv)
+	logrus.Infof("iv 是 %#v", iv)
 
 	// 1(addrType) + 1(lenByte) + 255(max length address) + 2(port) + 10(hmac-sha1)
 	buf := make([]byte, 269)
 	if err := s.readAndDecode(conn, buf[:1]); err != nil {
 		return
 	}
-	logrus.Infof("读到的数据, 解密后: %v", buf)
 	/*
 			shadowsocks UDP 请求 (加密前)
 		+------+----------+----------+----------+
