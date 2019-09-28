@@ -161,8 +161,6 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		err := s.DecodeCopy(dstServer, conn)
 		if err != nil {
 			logrus.Errorf("DecodeCopy 失败: %v", err)
-			conn.Close()
-			dstServer.Close()
 		}
 	}()
 	// 远程网站 -> s -> 用户
