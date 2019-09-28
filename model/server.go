@@ -123,9 +123,9 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		addrlen := int(buf[1])
 		logrus.Infof("地址长度是 %v | %v", buf[1], addrlen)
 		s.readAndDecode(conn, buf[2:2+addrlen+2])
+		logrus.Info(string(buf[2 : 2+addrlen]))
 		ipaddr, err := net.ResolveIPAddr("ip", string(buf[2:2+addrlen]))
 		if err != nil {
-			logrus.Info(string(buf[2 : 2+addrlen]))
 			logrus.Error(err)
 			return
 		}
