@@ -175,6 +175,7 @@ func (s *TCPServer) EncodeCopy(dst, src *net.TCPConn) error {
 	for {
 		// 读取
 		readCount, errRead := src.Read(buf)
+		logrus.Infof("EncodeCopy 读取字节数 %v, 错误为 %v", readCount, errRead)
 		if errRead != nil {
 			if errRead == io.EOF {
 				return nil
@@ -187,11 +188,13 @@ func (s *TCPServer) EncodeCopy(dst, src *net.TCPConn) error {
 		// 加密
 		data, err := s.crypto.EncodeData(buf[0:readCount])
 		if err != nil {
+			logrus.Infof("EncodeCopy 加密时错误为 %v", err)
 			return err
 		}
 		// 写入
 		writeCount, errWrite := dst.Write(data)
 		if errWrite != nil {
+			logrus.Infof("EncodeCopy 写入时错位为 %v", errWrite)
 			return errWrite
 		}
 		if readCount != writeCount {
@@ -206,6 +209,7 @@ func (s *TCPServer) DecodeCopy(dst, src *net.TCPConn) error {
 	for {
 		// 读取
 		readCount, errRead := src.Read(buf)
+		logrus.Infof("DecodeCopy 读取字节数 %v, 错误为 %v", readCount, errRead)
 		if errRead != nil {
 			if errRead == io.EOF {
 				return nil
@@ -218,11 +222,13 @@ func (s *TCPServer) DecodeCopy(dst, src *net.TCPConn) error {
 		// 解密
 		data, err := s.crypto.DecodeData(buf[0:readCount])
 		if err != nil {
+			logrus.Infof("DecodeCopy 加密时错误为 %v", err)
 			return err
 		}
 		// 写入
 		writeCount, errWrite := dst.Write(data)
 		if errWrite != nil {
+			logrus.Infof("DecodeCopy 写入时错位为 %v", errWrite)
 			return errWrite
 		}
 		if readCount != writeCount {
