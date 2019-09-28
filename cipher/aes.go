@@ -10,10 +10,12 @@ import (
 
 // AESCrypto 是 AES加密实现, 暂时是 CFB
 type AESCrypto struct {
-	key      []byte         // key 是从密码中生成 derived key
-	block    gocipher.Block // block 是 cipher.Block, 块加密
-	Localiv  []byte         // Localiv 本地用于加密的 iv
-	Remoteiv []byte         // Remoteiv, 来自客户端, 用于解密
+	key      []byte          // key 是从密码中生成 derived key
+	block    gocipher.Block  // block 是 cipher.Block, 块加密
+	Localiv  []byte          // Localiv 本地用于加密的 iv
+	Remoteiv []byte          // Remoteiv, 来自客户端, 用于解密
+	dec      gocipher.Stream // 解码流
+	enc      gocipher.Stream // 加密流
 }
 
 // NewAESCrypto 创建一个新的 AESCrypto
@@ -40,11 +42,11 @@ func (c *AESCrypto) EncodeData(plaintext []byte) ([]byte, error) {
 			return nil, err
 		}
 		c.Localiv = iv
+		c.enc = gocipher.NewCFBEncrypter(c.block, c.Localiv)
 	}
-	ciphertext := make([]byte, len(plaintext))
 
-	stream := gocipher.NewCFBEncrypter(c.block, c.Localiv)
-	stream.XORKeyStream(ciphertext, plaintext)
+	ciphertext := make([]byte, len(plaintext))
+	c.enc.XORKeyStream(ciphertext, plaintext)
 	return ciphertext, nil
 }
 
@@ -53,10 +55,12 @@ func (c *AESCrypto) DecodeData(ciphertext []byte) ([]byte, error) {
 	if c.Remoteiv == nil {
 		return nil, errors.New("没有设置 Remoteiv")
 	}
-	plaintext := make([]byte, len(ciphertext))
+	if c.dec == nil {
+		c.dec = gocipher.NewCFBDecrypter(c.block, c.Remoteiv)
+	}
 
-	stream := gocipher.NewCFBDecrypter(c.block, c.Remoteiv)
-	stream.XORKeyStream(plaintext, ciphertext)
+	plaintext := make([]byte, len(ciphertext))
+	c.dec.XORKeyStream(plaintext, ciphertext)
 	return plaintext, nil
 }
 

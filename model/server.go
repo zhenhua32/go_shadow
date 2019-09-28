@@ -113,7 +113,6 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	var dstIP []byte
 	var dstPort []byte
 	logrus.Infof("第一个字节是 %v", buf[0])
-	logrus.Infof("第一个字节 mask: %v", buf[0]&0xf)
 	switch buf[0] {
 	case 0x01: // IPV4
 		s.readAndDecode(conn, buf[1:1+net.IPv4len+2])

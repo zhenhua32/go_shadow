@@ -30,12 +30,12 @@ func TestAESCrypto_EncodeData(t *testing.T) {
 	if len(ciphertext) != len(plaintext) {
 		t.Error("加密后的大小不对")
 	}
-	t.Log(hex.EncodeToString(ciphertext))
+	t.Error(hex.EncodeToString(append(c.Localiv, ciphertext...)))
 }
 
 func TestNewAESCrypto_DecodeData(t *testing.T) {
 	c, _ := NewAESCrypto(password, 16)
-	ciphertext, _ := hex.DecodeString("12516deaf8a06cc4ff9072fb84938e87b557c29d8017274406f7f5")
+	ciphertext, _ := hex.DecodeString("8d3a88c1428c60e1040728fc82206dcb363f49e5e992e2f30ab442")
 	c.Remoteiv = ciphertext[:16]
 	plaintext, err := c.DecodeData(ciphertext[16:])
 	if err != nil {
@@ -51,10 +51,11 @@ func TestNewAESCrypto_DecodeData(t *testing.T) {
 func TestTT(t *testing.T) {
 	password = "hellotheworld"
 	c, _ := NewAESCrypto(password, 32)
-	ciphertext := []byte{96}
-	iv := []byte{209, 195, 85, 145, 106, 155, 49, 80, 207, 216, 2, 232, 195, 16, 205, 57}
+	ciphertext := []byte{121, 221}
+	iv := []byte{0xc, 0x16, 0xe6, 0xb0, 0xff, 0x4f, 0xb1, 0x5a, 0x55, 0x60, 0x7b, 0x3, 0x38, 0x27, 0xe3, 0xd7}
 	c.Remoteiv = iv
-	plaintext, err := c.DecodeData(ciphertext)
+	c.DecodeData(ciphertext[:1])
+	plaintext, err := c.DecodeData(ciphertext[1:])
 	if err != nil {
 		t.Errorf("AESCrypto 解密时发生错误: %v", err)
 	}
