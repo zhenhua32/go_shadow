@@ -109,7 +109,6 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	// 判断地址类型
 	var dstIP []byte
 	var dstPort []byte
-	var headerLen int
 	logrus.Infof("第一个字节是 %v", buf[0])
 	logrus.Infof("第一个字节 mask: %v", buf[0]&0xf)
 	switch buf[0] {
@@ -117,7 +116,6 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		s.readAndDecode(conn, buf[1:1+net.IPv4len+2])
 		dstIP = buf[1 : 1+net.IPv4len]
 		dstPort = buf[1+net.IPv4len : 1+net.IPv4len+2]
-		headerLen = 1 + net.IPv4len + 2
 	case 0x03: // DOMAINNAME
 		s.readAndDecode(conn, buf[1:2])
 		addrlen := int(buf[1])
@@ -127,12 +125,10 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 			return
 		}
 		dstIP = ipaddr.IP
-		headerLen = 2 + addrlen + 2
 	case 0x04: // IPV6
 		s.readAndDecode(conn, buf[1:1+net.IPv6len+2])
 		dstIP = buf[1 : 1+net.IPv6len]
 		dstPort = buf[1+net.IPv6len : 1+net.IPv6len+2]
-		headerLen = 1 + net.IPv6len + 2
 	default:
 		logrus.Info("没有解析成功")
 		return
