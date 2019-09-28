@@ -165,23 +165,18 @@ func (s *TCPServer) handle(conn *CryptoConn) {
 	conn.SetLinger(0)
 	dstServer.SetLinger(0)
 
-	data := make([]byte, 128)
-	s.readAndDecode(conn, data)
-	logrus.Info(data)
-	logrus.Info(string(data))
-	return
 	// 返回 iv
-	// conn.Write(s.crypto.GetLocaliv())
+	conn.Write(conn.crypto.GetLocaliv())
 
-	// // 用户 -> s -> 远程网站
-	// go func() {
-	// 	err := s.DecodeCopy(dstServer, conn)
-	// 	if err != nil {
-	// 		logrus.Errorf("DecodeCopy 失败: %v", err)
-	// 	}
-	// }()
-	// // 远程网站 -> s -> 用户
-	// s.DecodeCopy(conn, dstServer)
+	// 用户 -> s -> 远程网站
+	go func() {
+		err := s.DecodeCopy(dstServer, conn)
+		if err != nil {
+			logrus.Errorf("DecodeCopy 失败: %v", err)
+		}
+	}()
+	// 远程网站 -> s -> 用户
+	s.EncodeCopy(conn, dstServer)
 }
 
 // EncodeCopy 从 src 中读取数据, 并加密写入 dst
