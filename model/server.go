@@ -198,7 +198,7 @@ func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
 			continue
 		}
 		// 加密
-		logrus.Infof("EncodeCopy 读取到的数据 %v", string(buf[0:readCount]))
+		// logrus.Infof("EncodeCopy 读取到的数据 %v", string(buf[0:readCount]))
 		data, err := dst.crypto.EncodeData(buf[0:readCount])
 		if err != nil {
 			logrus.Infof("EncodeCopy 加密时错误为 %v", err)
