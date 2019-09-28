@@ -165,9 +165,6 @@ func (s *TCPServer) handle(conn *CryptoConn) {
 	conn.SetLinger(0)
 	dstServer.SetLinger(0)
 
-	// 返回 iv
-	conn.Write(conn.crypto.GetLocaliv())
-
 	// 用户 -> s -> 远程网站
 	go func() {
 		err := s.DecodeCopy(dstServer, conn)
@@ -181,6 +178,11 @@ func (s *TCPServer) handle(conn *CryptoConn) {
 
 // EncodeCopy 从 src 中读取数据, 并加密写入 dst
 func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
+	// 第一次写入 iv
+	iv := dst.crypto.GetLocaliv()
+	logrus.Infof("GetLocaliv 是 %v", iv)
+	dst.Write(iv)
+
 	buf := make([]byte, s.bufSize)
 	for {
 		// 读取
@@ -196,6 +198,7 @@ func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
 			continue
 		}
 		// 加密
+		logrus.Infof("EncodeCopy 读取到的数据 %v", string(buf[0:readCount]))
 		data, err := dst.crypto.EncodeData(buf[0:readCount])
 		if err != nil {
 			logrus.Infof("EncodeCopy 加密时错误为 %v", err)
