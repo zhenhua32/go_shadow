@@ -85,7 +85,6 @@ func (s *TCPServer) readAndDecode(conn *CryptoConn, buf []byte) error {
 // handle 处理每一个连接
 func (s *TCPServer) handle(conn *CryptoConn) {
 	defer logrus.Info("连接已经结束")
-	defer conn.Close()
 
 	// 读取 iv
 	iv := make([]byte, s.lenIv)
@@ -161,9 +160,8 @@ func (s *TCPServer) handle(conn *CryptoConn) {
 		logrus.Infof("连接目标网站失败, 网站是 %v, 错误是 %v", dstAddr, err)
 		return
 	}
-	defer dstServer.Close()
-	conn.SetLinger(0)
-	dstServer.SetLinger(0)
+	// conn.SetLinger(0)
+	// dstServer.SetLinger(0)
 
 	// 用户 -> s -> 远程网站
 	go func() {
@@ -178,6 +176,7 @@ func (s *TCPServer) handle(conn *CryptoConn) {
 
 // EncodeCopy 从 src 中读取数据, 并加密写入 dst
 func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
+	defer dst.Close()
 	// 第一次写入 iv
 	iv := dst.crypto.GetLocaliv()
 	logrus.Infof("GetLocaliv 是 %v", iv)
@@ -218,6 +217,7 @@ func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
 
 // DecodeCopy 从 src 中读取加密数据, 并解密后写入 dst
 func (s *TCPServer) DecodeCopy(dst *net.TCPConn, src *CryptoConn) error {
+	defer dst.Close()
 	buf := make([]byte, s.bufSize)
 	for {
 		// 读取
