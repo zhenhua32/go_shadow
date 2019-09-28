@@ -130,6 +130,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 			return
 		}
 		dstIP = ipaddr.IP
+		dstPort = buf[2+addrlen : 2+addrlen+2]
 	case 0x04: // IPV6
 		s.readAndDecode(conn, buf[1:1+net.IPv6len+2])
 		dstIP = buf[1 : 1+net.IPv6len]
