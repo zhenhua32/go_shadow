@@ -62,11 +62,12 @@ func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
 		return err
 	}
 	logrus.Infof("未解密前: %v", buf)
-	buf, err := s.crypto.DecodeData(buf)
+	buf2, err := s.crypto.DecodeData(buf)
 	if err != nil {
 		return err
 	}
-	logrus.Infof("解密后: %v", buf)
+	copy(buf, buf2)
+	logrus.Infof("未解密前: %v", buf)
 	return nil
 }
 
