@@ -27,25 +27,23 @@ func NewAESCrypto(password string, keylen int) (*AESCrypto, error) {
 		return nil, err
 	}
 
+	// 获取 iv 和 enc
+	iv := make([]byte, aes.BlockSize)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return nil, err
+	}
+	enc := gocipher.NewCFBEncrypter(block, iv)
+
 	return &AESCrypto{
-		key:   key,
-		block: block,
+		key:     key,
+		block:   block,
+		Localiv: iv,
+		enc:     enc,
 	}, nil
 }
 
 // EncodeData 使用 cfb 加密, 返回的数据不包括 iv
 func (c *AESCrypto) EncodeData(plaintext []byte) ([]byte, error) {
-	if c.Localiv == nil {
-		// 随机填充 iv
-		iv := make([]byte, aes.BlockSize)
-		if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-			return nil, err
-		}
-		c.Localiv = make([]byte, aes.BlockSize)
-		copy(c.Localiv, iv)
-		c.enc = gocipher.NewCFBEncrypter(c.block, c.Localiv)
-	}
-
 	ciphertext := make([]byte, len(plaintext))
 	c.enc.XORKeyStream(ciphertext, plaintext)
 	return ciphertext, nil
