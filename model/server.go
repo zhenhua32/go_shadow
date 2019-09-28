@@ -67,7 +67,7 @@ func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
 		return err
 	}
 	copy(buf, buf2)
-	logrus.Infof("未解密前: %v", buf)
+	logrus.Infof("解密后: %v", string(buf))
 	return nil
 }
 
@@ -125,6 +125,8 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		s.readAndDecode(conn, buf[2:2+addrlen+2])
 		ipaddr, err := net.ResolveIPAddr("ip", string(buf[2:2+addrlen]))
 		if err != nil {
+			logrus.Info(string(buf[2 : 2+addrlen]))
+			logrus.Error(err)
 			return
 		}
 		dstIP = ipaddr.IP
@@ -146,8 +148,9 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	if err != nil {
 		return
 	}
-
 	defer dstServer.Close()
+
+	conn.Write(s.crypto.GetLocaliv())
 
 	// 用户 -> s -> 远程网站
 	go func() {

@@ -65,6 +65,11 @@ func (c *AESCrypto) SetRemoteiv(iv []byte) {
 	c.Remoteiv = iv
 }
 
+// GetLocaliv 返回 Localiv
+func (c *AESCrypto) GetLocaliv() []byte {
+	return c.Localiv
+}
+
 // AESSupportMethods 返回支持的加密方法
 func AESSupportMethods() []string {
 	return []string{"aes-128-cfb", "aes-192-cfb", "aes-256-cfb"}

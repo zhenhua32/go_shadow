@@ -22,3 +22,8 @@ func (c *NoneCrypto) DecodeData(data []byte) ([]byte, error) {
 // SetRemoteiv 设置 iv
 func (c *NoneCrypto) SetRemoteiv(iv []byte) {
 }
+
+// GetLocaliv 返回 iv
+func (c *NoneCrypto) GetLocaliv() []byte {
+	return nil
+}

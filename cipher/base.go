@@ -9,6 +9,7 @@ type Crypto interface {
 	// 解密数据
 	DecodeData(data []byte) ([]byte, error)
 	SetRemoteiv(iv []byte)
+	GetLocaliv() []byte
 }
 
 // NewCrypto 根据 method 返回不同的加密方式
