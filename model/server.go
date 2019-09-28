@@ -166,7 +166,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		}
 	}()
 	// 远程网站 -> s -> 用户
-	s.EncodeCopy(conn, dstServer)
+	s.DecodeCopy(conn, dstServer)
 }
 
 // EncodeCopy 从 src 中读取数据, 并加密写入 dst
