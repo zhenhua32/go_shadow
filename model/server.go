@@ -73,6 +73,7 @@ func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
 
 // handle 处理每一个连接
 func (s *TCPServer) handle(conn *net.TCPConn) {
+	defer logrus.Info("连接已经结束")
 	defer conn.Close()
 
 	// 读取 iv
@@ -143,14 +144,16 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		IP:   dstIP,
 		Port: int(binary.BigEndian.Uint16(dstPort)),
 	}
-	logrus.Info(dstAddr)
+	logrus.Infof("目标网站是: %v", dstAddr)
 	// 连接远程网站
 	dstServer, err := net.DialTCP("tcp", nil, dstAddr)
 	if err != nil {
+		logrus.Info("连接目标网站失败")
 		return
 	}
 	defer dstServer.Close()
 
+	// 返回 iv
 	conn.Write(s.crypto.GetLocaliv())
 
 	// 用户 -> s -> 远程网站
