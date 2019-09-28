@@ -122,7 +122,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	case 0x03: // DOMAINNAME
 		s.readAndDecode(conn, buf[1:2])
 		addrlen := int(buf[1])
-		logrus.Infof("地址长度是 %v", buf[1])
+		logrus.Infof("地址长度是 %v | %v", buf[1], addrlen)
 		s.readAndDecode(conn, buf[2:2+addrlen+2])
 		ipaddr, err := net.ResolveIPAddr("ip", string(buf[2:2+addrlen]))
 		if err != nil {
