@@ -176,7 +176,7 @@ func (s *TCPServer) handle(conn *CryptoConn) {
 
 // EncodeCopy 从 src 中读取数据, 并加密写入 dst
 func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
-	defer dst.Close()
+	defer src.Close()
 	// 第一次写入 iv
 	iv := dst.crypto.GetLocaliv()
 	logrus.Infof("GetLocaliv 是 %v", iv)
@@ -217,7 +217,7 @@ func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
 
 // DecodeCopy 从 src 中读取加密数据, 并解密后写入 dst
 func (s *TCPServer) DecodeCopy(dst *net.TCPConn, src *CryptoConn) error {
-	defer dst.Close()
+	defer src.Close()
 	buf := make([]byte, s.bufSize)
 	for {
 		// 读取
