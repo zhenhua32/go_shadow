@@ -12,10 +12,17 @@ import (
 
 // TCPServer 创建一个 TCP 服务器
 type TCPServer struct {
-	crypto  cipher.Crypto // 加密方式
-	laddr   *net.TCPAddr  // 本地地址, 类似 :8080
-	bufSize int           // 缓存大小, 字节
-	lenIv   int           // iv 的长度
+	laddr    *net.TCPAddr // 本地地址, 类似 :8080
+	bufSize  int          // 缓存大小, 字节
+	lenIv    int          // iv 的长度
+	method   string       // 加密方法
+	password string       // 密码
+}
+
+// CryptoConn 包含加密组件
+type CryptoConn struct {
+	*net.TCPConn
+	crypto cipher.Crypto // 加密方式, 应该隔离开
 }
 
 // NewTCPServer 新建一个 TCP 服务端
@@ -25,16 +32,12 @@ func NewTCPServer(port int, method string, password string) *TCPServer {
 		logrus.Errorln("创建 TCP 服务端时发生地址解析错误: ", err)
 		return nil
 	}
-	crypto, err := cipher.NewCrypto(method, password)
-	if err != nil {
-		logrus.Errorln("创建 TCP 服务端时发生加密方式错误: ", err)
-		return nil
-	}
 	return &TCPServer{
-		crypto:  crypto,
-		laddr:   laddr,
-		bufSize: 1024,
-		lenIv:   16,
+		laddr:    laddr,
+		bufSize:  1024,
+		lenIv:    16,
+		method:   method,
+		password: password,
 	}
 }
 
@@ -53,16 +56,24 @@ func (s *TCPServer) Listen() error {
 			continue
 		}
 		logrus.Infof("接收到一个连接, %v", conn.RemoteAddr())
-		go s.handle(conn)
+		crypto, err := cipher.NewCrypto(s.method, s.password)
+		if err != nil {
+			logrus.Errorln("创建 TCP 服务端时发生加密方式错误: ", err)
+			continue
+		}
+		go s.handle(&CryptoConn{
+			TCPConn: conn,
+			crypto:  crypto,
+		})
 	}
 }
 
-func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
+func (s *TCPServer) readAndDecode(conn *CryptoConn, buf []byte) error {
 	if _, err := io.ReadFull(conn, buf); err != nil {
 		return err
 	}
 	logrus.Infof("未解密前: %v", buf)
-	buf2, err := s.crypto.DecodeData(buf)
+	buf2, err := conn.crypto.DecodeData(buf)
 	if err != nil {
 		return err
 	}
@@ -72,7 +83,7 @@ func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
 }
 
 // handle 处理每一个连接
-func (s *TCPServer) handle(conn *net.TCPConn) {
+func (s *TCPServer) handle(conn *CryptoConn) {
 	defer logrus.Info("连接已经结束")
 	defer conn.Close()
 
@@ -81,7 +92,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	if _, err := io.ReadFull(conn, iv); err != nil {
 		return
 	}
-	s.crypto.SetRemoteiv(iv)
+	conn.crypto.SetRemoteiv(iv)
 	logrus.Infof("iv 是 %#v", iv)
 
 	// 1(addrType) + 1(lenByte) + 255(max length address) + 2(port) + 10(hmac-sha1)
@@ -89,26 +100,25 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	if err := s.readAndDecode(conn, buf[:1]); err != nil {
 		return
 	}
-	/*
-			shadowsocks UDP 请求 (加密前)
-		+------+----------+----------+----------+
-		| ATYP | DST.ADDR | DST.PORT |   DATA   |
-		+------+----------+----------+----------+
-		|  1   | Variable |    2     | Variable |
-		+------+----------+----------+----------+
-		shadowsocks UDP 响应 (加密前)
-		+------+----------+----------+----------+
-		| ATYP | DST.ADDR | DST.PORT |   DATA   |
-		+------+----------+----------+----------+
-		|  1   | Variable |    2     | Variable |
-		+------+----------+----------+----------+
-		shadowsocks UDP 请求和响应 (加密后)
-		+-------+--------------+
-		|   IV  |    PAYLOAD   |
-		+-------+--------------+
-		| Fixed |   Variable   |
-		+-------+--------------+
-	*/
+
+	// 	shadowsocks UDP 请求 (加密前)
+	// +------+----------+----------+----------+
+	// | ATYP | DST.ADDR | DST.PORT |   DATA   |
+	// +------+----------+----------+----------+
+	// |  1   | Variable |    2     | Variable |
+	// +------+----------+----------+----------+
+	// shadowsocks UDP 响应 (加密前)
+	// +------+----------+----------+----------+
+	// | ATYP | DST.ADDR | DST.PORT |   DATA   |
+	// +------+----------+----------+----------+
+	// |  1   | Variable |    2     | Variable |
+	// +------+----------+----------+----------+
+	// shadowsocks UDP 请求和响应 (加密后)
+	// +-------+--------------+
+	// |   IV  |    PAYLOAD   |
+	// +-------+--------------+
+	// | Fixed |   Variable   |
+	// +-------+--------------+
 
 	// 判断地址类型
 	var dstIP []byte
@@ -175,7 +185,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 }
 
 // EncodeCopy 从 src 中读取数据, 并加密写入 dst
-func (s *TCPServer) EncodeCopy(dst, src *net.TCPConn) error {
+func (s *TCPServer) EncodeCopy(dst *CryptoConn, src *net.TCPConn) error {
 	buf := make([]byte, s.bufSize)
 	for {
 		// 读取
@@ -192,7 +202,7 @@ func (s *TCPServer) EncodeCopy(dst, src *net.TCPConn) error {
 		}
 		logrus.Infof("EncodeCopy 数据为 %v", string(buf))
 		// 加密
-		data, err := s.crypto.EncodeData(buf[0:readCount])
+		data, err := dst.crypto.EncodeData(buf[0:readCount])
 		if err != nil {
 			logrus.Infof("EncodeCopy 加密时错误为 %v", err)
 			return err
@@ -210,7 +220,7 @@ func (s *TCPServer) EncodeCopy(dst, src *net.TCPConn) error {
 }
 
 // DecodeCopy 从 src 中读取加密数据, 并解密后写入 dst
-func (s *TCPServer) DecodeCopy(dst, src *net.TCPConn) error {
+func (s *TCPServer) DecodeCopy(dst *net.TCPConn, src *CryptoConn) error {
 	buf := make([]byte, s.bufSize)
 	for {
 		// 读取
@@ -226,7 +236,7 @@ func (s *TCPServer) DecodeCopy(dst, src *net.TCPConn) error {
 			continue
 		}
 		// 解密
-		data, err := s.crypto.DecodeData(buf[0:readCount])
+		data, err := src.crypto.DecodeData(buf[0:readCount])
 		logrus.Infof("DecodeCopy 数据为 %v", string(data))
 		if err != nil {
 			logrus.Infof("DecodeCopy 加密时错误为 %v", err)
