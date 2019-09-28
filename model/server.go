@@ -152,6 +152,8 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		return
 	}
 	defer dstServer.Close()
+	conn.SetLinger(0)
+	dstServer.SetLinger(0)
 
 	// 返回 iv
 	conn.Write(s.crypto.GetLocaliv())
@@ -191,8 +193,8 @@ func (s *TCPServer) EncodeCopy(dst, src *net.TCPConn) error {
 		}
 		// 写入
 		writeCount, errWrite := dst.Write(data)
+		logrus.Infof("EncodeCopy 写入字节数 %v, 错误为 %v", writeCount, errWrite)
 		if errWrite != nil {
-			logrus.Infof("EncodeCopy 写入时错位为 %v", errWrite)
 			return errWrite
 		}
 		if readCount != writeCount {
@@ -225,8 +227,9 @@ func (s *TCPServer) DecodeCopy(dst, src *net.TCPConn) error {
 		}
 		// 写入
 		writeCount, errWrite := dst.Write(data)
+		logrus.Infof("DecodeCopy 写入字节数 %v, 错误为 %v", writeCount, errWrite)
 		if errWrite != nil {
-			logrus.Infof("DecodeCopy 写入时错位为 %v", errWrite)
+			logrus.Infof("DecodeCopy 写入时错误为 %v", errWrite)
 			return errWrite
 		}
 		if readCount != writeCount {
