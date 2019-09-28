@@ -158,7 +158,7 @@ func (s *TCPServer) handle(conn *CryptoConn) {
 	// 连接远程网站
 	dstServer, err := net.DialTCP("tcp", nil, dstAddr)
 	if err != nil {
-		logrus.Info("连接目标网站失败")
+		logrus.Infof("连接目标网站失败, 网站是 %v, 错误是 %v", dstAddr, err)
 		return
 	}
 	defer dstServer.Close()
