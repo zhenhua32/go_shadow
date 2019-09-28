@@ -47,3 +47,16 @@ func TestNewAESCrypto_DecodeData(t *testing.T) {
 	}
 	t.Log(string(plaintext))
 }
+
+func TestTT(t *testing.T) {
+	password = "hellotheworld"
+	c, _ := NewAESCrypto(password, 32)
+	ciphertext := []byte{96}
+	iv := []byte{209, 195, 85, 145, 106, 155, 49, 80, 207, 216, 2, 232, 195, 16, 205, 57}
+	c.Remoteiv = iv
+	plaintext, err := c.DecodeData(ciphertext)
+	if err != nil {
+		t.Errorf("AESCrypto 解密时发生错误: %v", err)
+	}
+	t.Error(plaintext)
+}

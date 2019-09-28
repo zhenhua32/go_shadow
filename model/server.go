@@ -52,15 +52,27 @@ func (s *TCPServer) Listen() error {
 			logrus.Errorln("处理连接时遇到错误: ", err)
 			continue
 		}
-		logrus.Info("接收到一个连接")
+		logrus.Infof("接收到一个连接, %v", conn.RemoteAddr())
 		go s.handle(conn)
 	}
+}
+
+func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
+	if _, err := io.ReadFull(conn, buf); err != nil {
+		return err
+	}
+	buf, err := s.crypto.DecodeData(buf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // handle 处理每一个连接
 func (s *TCPServer) handle(conn *net.TCPConn) {
 	defer conn.Close()
 
+	// 读取 iv
 	iv := make([]byte, s.lenIv)
 	if _, err := io.ReadFull(conn, iv); err != nil {
 		return
@@ -68,18 +80,11 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	s.crypto.SetRemoteiv(iv)
 
 	// 1(addrType) + 1(lenByte) + 255(max length address) + 2(port) + 10(hmac-sha1)
-	source := make([]byte, 269)
-	if _, err := io.ReadFull(conn, source[:1]); err != nil {
-		return
-	}
-	logrus.Infof("读到的数据 source: %v", source[:1])
-
-	buf, err := s.crypto.DecodeData(source[:1])
-	if err != nil {
+	buf := make([]byte, 269)
+	if err := s.readAndDecode(conn, buf[:1]); err != nil {
 		return
 	}
 	logrus.Infof("读到的数据, 解密后: %v", buf)
-	logrus.Infof("读到的数据, 解密后 字符串形式: %v", string(buf))
 	/*
 			shadowsocks UDP 请求 (加密前)
 		+------+----------+----------+----------+
@@ -109,11 +114,14 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	logrus.Infof("第一个字节 mask: %v", buf[0]&0xf)
 	switch buf[0] {
 	case 0x01: // IPV4
+		s.readAndDecode(conn, buf[1:1+net.IPv4len+2])
 		dstIP = buf[1 : 1+net.IPv4len]
 		dstPort = buf[1+net.IPv4len : 1+net.IPv4len+2]
 		headerLen = 1 + net.IPv4len + 2
 	case 0x03: // DOMAINNAME
+		s.readAndDecode(conn, buf[1:2])
 		addrlen := int(buf[1])
+		s.readAndDecode(conn, buf[2:2+addrlen+2])
 		ipaddr, err := net.ResolveIPAddr("ip", string(buf[2:2+addrlen]))
 		if err != nil {
 			return
@@ -121,6 +129,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		dstIP = ipaddr.IP
 		headerLen = 2 + addrlen + 2
 	case 0x04: // IPV6
+		s.readAndDecode(conn, buf[1:1+net.IPv6len+2])
 		dstIP = buf[1 : 1+net.IPv6len]
 		dstPort = buf[1+net.IPv6len : 1+net.IPv6len+2]
 		headerLen = 1 + net.IPv6len + 2
@@ -128,11 +137,11 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 		logrus.Info("没有解析成功")
 		return
 	}
-	logrus.Infof("排除头部后剩余的数据: %v", buf[headerLen:])
 	dstAddr := &net.TCPAddr{
 		IP:   dstIP,
 		Port: int(binary.BigEndian.Uint16(dstPort)),
 	}
+	logrus.Info(dstAddr)
 	// 连接远程网站
 	dstServer, err := net.DialTCP("tcp", nil, dstAddr)
 	if err != nil {
