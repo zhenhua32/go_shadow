@@ -160,6 +160,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	go func() {
 		err := s.DecodeCopy(dstServer, conn)
 		if err != nil {
+			logrus.Errorf("DecodeCopy 失败: %v", err)
 			conn.Close()
 			dstServer.Close()
 		}
