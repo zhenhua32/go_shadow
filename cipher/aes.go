@@ -41,6 +41,7 @@ func (c *AESCrypto) EncodeData(plaintext []byte) ([]byte, error) {
 		if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 			return nil, err
 		}
+		c.Localiv = make([]byte, aes.BlockSize)
 		copy(c.Localiv, iv)
 		c.enc = gocipher.NewCFBEncrypter(c.block, c.Localiv)
 	}
