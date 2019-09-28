@@ -67,7 +67,7 @@ func (s *TCPServer) readAndDecode(conn *net.TCPConn, buf []byte) error {
 		return err
 	}
 	copy(buf, buf2)
-	logrus.Infof("解密后: %v", string(buf))
+	logrus.Infof("解密后: %v", buf)
 	return nil
 }
 
@@ -122,6 +122,7 @@ func (s *TCPServer) handle(conn *net.TCPConn) {
 	case 0x03: // DOMAINNAME
 		s.readAndDecode(conn, buf[1:2])
 		addrlen := int(buf[1])
+		logrus.Infof("地址长度是 %v", buf[1])
 		s.readAndDecode(conn, buf[2:2+addrlen+2])
 		ipaddr, err := net.ResolveIPAddr("ip", string(buf[2:2+addrlen]))
 		if err != nil {
